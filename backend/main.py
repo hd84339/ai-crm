@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db, engine, Base
 import models
 import schemas
+from ai.agent import test_llm
 
 app = FastAPI()
 
@@ -16,6 +17,9 @@ def home():
 def test_db(db: Session = Depends(get_db)):
     return {"message": "DB Connected Successfully ✅"}
 
+@app.get("/ai/test")
+def ai_test():
+    return {"response": test_llm()}
 
 # 🔥 CREATE INTERACTION API
 @app.post("/interaction/log")
@@ -86,3 +90,6 @@ def edit_interaction(
         "message": "Interaction updated successfully ✅",
         "data": interaction
     }
+
+
+
