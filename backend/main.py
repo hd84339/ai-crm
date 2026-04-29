@@ -4,8 +4,18 @@ from database import get_db, engine, Base
 import models
 import schemas
 from ai.agent import test_llm
+from ai.graph import app_graph
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React frontend
+    allow_credentials=True,
+    allow_methods=["*"],  # allows POST, GET, OPTIONS etc
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -91,5 +101,13 @@ def edit_interaction(
         "data": interaction
     }
 
+# -------------------------
+# AI AGENT ENDPOINT
+# -------------------------
+@app.post("/ai/agent")
+def run_agent(payload: dict):
+    result = app_graph.invoke({
+        "input": payload["input"]
+    })
 
-
+    return result
