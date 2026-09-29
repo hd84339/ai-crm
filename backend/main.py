@@ -251,6 +251,20 @@ def get_hcp(hcp_id: int, db: Session = Depends(get_db)):
         }
     }
 
+@app.delete("/hcps/{hcp_id}")
+def delete_hcp(hcp_id: int, db: Session = Depends(get_db)):
+    hcp = db.query(models.HCP).filter(models.HCP.id == hcp_id).first()
+    if not hcp:
+        return {"success": False, "message": "HCP not found"}
+    
+    db.delete(hcp)
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": "HCP deleted successfully ✅"
+    }
+
 # -------------------------
 # FOLLOW-UP ENDPOINTS
 # -------------------------
@@ -261,9 +275,71 @@ def get_followups(status: str = None, db: Session = Depends(get_db)):
         query = query.filter(models.FollowUp.status.ilike(status))
     
     followups = query.order_by(models.FollowUp.due_date.asc()).all()
+    
+    # attach HCP details
+    result = []
+    for fu in followups:
+        hcp = db.query(models.HCP).filter(models.HCP.id == fu.hcp_id).first()
+        result.append({
+            "id": fu.id,
+            "hcp_id": fu.hcp_id,
+            "doctor_name": hcp.name if hcp else "Unknown",
+            "task": fu.task,
+            "due_date": fu.due_date,
+            "status": fu.status,
+            "created_at": fu.created_at
+        })
+        
     return {
         "success": True,
-        "data": followups
+        "data": result
+    }
+
+@app.put("/followups/{followup_id}")
+def update_followup(
+    followup_id: int,
+    data: schemas.FollowUpUpdate,
+    db: Session = Depends(get_db)
+):
+    followup = db.query(models.FollowUp).filter(models.FollowUp.id == followup_id).first()
+    if not followup:
+        return {"success": False, "error": "Follow-up not found ❌"}
+
+    if data.task is not None:
+        followup.task = data.task
+    if data.status is not None:
+        followup.status = data.status
+        if data.status.lower() == "completed":
+            followup.completed_at = datetime.utcnow()
+        else:
+            followup.completed_at = None
+    if data.due_date is not None:
+        followup.due_date = data.due_date
+
+    db.commit()
+    db.refresh(followup)
+    
+    return {
+        "success": True,
+        "message": "Follow-up updated successfully ✅",
+        "data": followup
+    }
+
+@app.delete("/followups/{followup_id}")
+def delete_followup(
+    followup_id: int,
+    db: Session = Depends(get_db)
+):
+    followup = db.query(models.FollowUp).filter(models.FollowUp.id == followup_id).first()
+    if not followup:
+        return {"success": False, "error": "Follow-up not found ❌"}
+
+    db.delete(followup)
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": "Follow-up deleted successfully ✅"
     }
 
 # -------------------------

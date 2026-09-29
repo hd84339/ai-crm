@@ -27,6 +27,11 @@ export const getHcpProfile = async (id) => {
   return res.data;
 };
 
+export const deleteHcp = async (id) => {
+  const res = await api.delete(`/hcps/${id}`);
+  return res.data;
+};
+
 export const logInteraction = async (data) => {
   const res = await api.post(`/interaction/log`, data);
   return res.data;
@@ -39,6 +44,16 @@ export const getInteractions = async (page = 1, sentiment = '', engagement = '')
 
 export const getFollowUps = async (status = '') => {
   const res = await api.get(`/followups?status=${status}`);
+  return res.data;
+};
+
+export const updateFollowUp = async (id, data) => {
+  const res = await api.put(`/followups/${id}`, data);
+  return res.data;
+};
+
+export const deleteFollowUp = async (id) => {
+  const res = await api.delete(`/followups/${id}`);
   return res.data;
 };
 

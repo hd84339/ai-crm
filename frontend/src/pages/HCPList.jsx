@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, User, Calendar, Activity, X } from 'lucide-react';
-import { getHcps, createHcp } from '../services/api';
+import { Search, Plus, User, Calendar, Activity, X, Trash2 } from 'lucide-react';
+import { getHcps, createHcp, deleteHcp } from '../services/api';
 
 export default function HCPList() {
   const [hcps, setHcps] = useState([]);
@@ -47,6 +47,18 @@ export default function HCPList() {
       console.error("Failed to create HCP", error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteHcp = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete ${name}? This will also delete all associated interactions and follow-ups.`)) {
+      return;
+    }
+    try {
+      await deleteHcp(id);
+      fetchHcps();
+    } catch (error) {
+      console.error("Failed to delete HCP", error);
     }
   };
 
@@ -124,6 +136,7 @@ export default function HCPList() {
                   <th className="px-6 py-3">Specialty</th>
                   <th className="px-6 py-3">Engagement</th>
                   <th className="px-6 py-3">Last Contact</th>
+                  <th className="px-6 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -149,15 +162,26 @@ export default function HCPList() {
                         {hcp.engagement}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      {hcp.lastContact}
+                    <td className="px-6 py-4 text-slate-500">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {hcp.lastContact}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => handleDeleteHcp(hcp.id, hcp.name)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" 
+                        title="Delete HCP"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
                 {filteredHcps.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                       No HCPs found matching "{searchTerm}"
                     </td>
                   </tr>

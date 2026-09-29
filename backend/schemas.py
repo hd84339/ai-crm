@@ -38,3 +38,8 @@ class FollowUpCreate(BaseModel):
     task: str
     due_date: Optional[datetime] = None
     status: Optional[str] = "Pending"
+
+class FollowUpUpdate(BaseModel):
+    task: Optional[str] = None
+    status: Optional[str] = None
+    due_date: Optional[datetime] = None
