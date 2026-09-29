@@ -114,7 +114,7 @@ export default function Copilot() {
             
             {/* Message Bubble */}
             <div className={`max-w-[80%] ${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
-              <div className={`inline-block p-4 rounded-2xl ${
+              <div className={`inline-block p-4 rounded-2xl whitespace-pre-wrap ${
                 msg.type === 'user' 
                   ? 'bg-indigo-600 text-white rounded-tr-sm' 
                   : 'bg-white border border-slate-200 text-slate-800 shadow-sm rounded-tl-sm'
