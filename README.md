@@ -158,6 +158,38 @@ Interaction Table:
 
 ---
 
+# 📂 Project Structure & File Overview
+
+## Backend (`/backend`)
+The backend is built with FastAPI and integrates with the LangGraph AI agent.
+
+- `main.py`: The entry point for the FastAPI application. It sets up the server, configures CORS, and defines the API endpoints.
+- `database.py`: Handles database connection setup and SQLAlchemy base configuration.
+- `models.py`: Defines the SQLAlchemy database models (schema) such as the `Interaction` table for MySQL.
+- `schemas.py`: Contains Pydantic models used for data validation, serialization, and deserialization of API requests and responses.
+- `requirements.txt`: Lists all the Python dependencies required to run the backend.
+- `.env.example`: Template for environment variables needed (e.g., database URL, API keys).
+- `ai/`: Directory containing the LangGraph AI logic.
+  - `ai/agent.py`: Initializes the LLM (Groq) and agent configuration.
+  - `ai/tools.py`: Defines the tools that the LLM can use (e.g., logging, editing, or fetching interactions).
+  - `ai/graph.py`: Constructs the LangGraph execution flow and routes actions between the LLM and tools.
+
+## Frontend (`/frontend`)
+The frontend is a React application managing state with Redux.
+
+- `src/`: Contains the main React application source code.
+  - `components/`: Contains UI components (e.g., `LogInteraction.js` for the interaction logging form).
+  - `features/`: Contains Redux slices for state management (e.g., `interactionSlice.js` for managing interaction data).
+  - `services/`: Contains API integration logic (e.g., `api.js` for making Axios HTTP calls to the backend).
+  - `app/`: Contains the central Redux store configuration (`store.js`).
+  - `App.js`: The root React component that sets up the main layout and structure.
+  - `index.js`: The entry point that mounts the React application to the HTML DOM.
+- `public/`: Static assets like the main HTML template (`index.html`), favicon, and images.
+- `package.json`: NPM configuration file containing project metadata, scripts, and dependencies.
+- `.env.example`: Template for frontend environment variables (like the backend API URL).
+
+---
+
 # ▶️ How to Run
 
 ## Backend
