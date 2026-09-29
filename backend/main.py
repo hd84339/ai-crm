@@ -216,6 +216,25 @@ def get_hcps(search: str = None, page: int = 1, limit: int = 20, db: Session = D
         }
     }
 
+@app.post("/hcps")
+def create_hcp(data: schemas.HCPCreate, db: Session = Depends(get_db)):
+    new_hcp = models.HCP(
+        name=data.name,
+        specialty=data.specialty,
+        location=data.location,
+        email=data.email,
+        phone=data.phone
+    )
+    db.add(new_hcp)
+    db.commit()
+    db.refresh(new_hcp)
+    
+    return {
+        "success": True,
+        "message": "HCP created successfully ✅",
+        "data": new_hcp
+    }
+
 @app.get("/hcps/{hcp_id}")
 def get_hcp(hcp_id: int, db: Session = Depends(get_db)):
     hcp = db.query(models.HCP).filter(models.HCP.id == hcp_id).first()

@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Edit, MessageSquare, Sparkles, Calendar, Activity, ThumbsUp } from 'lucide-react';
-import { getHcpProfile } from '../services/api';
+import { Edit, MessageSquare, Sparkles, Calendar, Activity, ThumbsUp, X } from 'lucide-react';
+import { getHcpProfile, logInteraction } from '../services/api';
 
 export default function HCPProfile() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [hcp, setHcp] = useState(null);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newInteraction, setNewInteraction] = useState({
+    type: 'Product Discussion',
+    notes: '',
+    sentiment: 'Positive',
+    engagement: 'High',
+    follow_up: ''
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -58,6 +69,26 @@ export default function HCPProfile() {
     }
   };
 
+  const handleLogInteraction = async (e) => {
+    e.preventDefault();
+    if (!newInteraction.notes) return;
+    
+    try {
+      setSubmitting(true);
+      const payload = { ...newInteraction, hcp_id: parseInt(id) };
+      const res = await logInteraction(payload);
+      if (res.message) {
+        setIsModalOpen(false);
+        setNewInteraction({ type: 'Product Discussion', notes: '', sentiment: 'Positive', engagement: 'High', follow_up: '' });
+        fetchProfile(); // Refresh profile timeline
+      }
+    } catch (error) {
+      console.error("Failed to log interaction", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-8 text-center text-slate-500 animate-pulse">Loading HCP Profile...</div>;
   }
@@ -67,7 +98,64 @@ export default function HCPProfile() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto relative">
+      {/* Modal Overlay */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200">
+              <h2 className="font-bold text-lg text-slate-900">Log Interaction with {hcp.name}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleLogInteraction} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Interaction Type</label>
+                <select value={newInteraction.type} onChange={e => setNewInteraction({...newInteraction, type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option>Product Discussion</option>
+                  <option>Follow-up</option>
+                  <option>Initial Meeting</option>
+                  <option>Call</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Sentiment</label>
+                  <select value={newInteraction.sentiment} onChange={e => setNewInteraction({...newInteraction, sentiment: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>Positive</option>
+                    <option>Neutral</option>
+                    <option>Negative</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Engagement</label>
+                  <select value={newInteraction.engagement} onChange={e => setNewInteraction({...newInteraction, engagement: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notes *</label>
+                <textarea required rows={4} value={newInteraction.notes} onChange={e => setNewInteraction({...newInteraction, notes: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Discussed product efficacy..."></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Create Follow-up Task</label>
+                <input type="text" value={newInteraction.follow_up} onChange={e => setNewInteraction({...newInteraction, follow_up: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Schedule next meeting" />
+              </div>
+              <div className="pt-2 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition-colors">Cancel</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors disabled:opacity-50">
+                  {submitting ? 'Saving...' : 'Save Interaction'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
@@ -84,7 +172,7 @@ export default function HCPProfile() {
             <Edit className="w-4 h-4" />
             Edit
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+          <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
             <MessageSquare className="w-4 h-4" />
             Log Interaction
           </button>

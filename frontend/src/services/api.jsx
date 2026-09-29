@@ -17,8 +17,18 @@ export const getHcps = async (search = '', page = 1) => {
   return res.data;
 };
 
+export const createHcp = async (data) => {
+  const res = await api.post(`/hcps`, data);
+  return res.data;
+};
+
 export const getHcpProfile = async (id) => {
   const res = await api.get(`/hcps/${id}`);
+  return res.data;
+};
+
+export const logInteraction = async (data) => {
+  const res = await api.post(`/interaction/log`, data);
   return res.data;
 };
 

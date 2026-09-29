@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, Send, Sparkles, User as UserIcon, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { logAIInteraction } from '../services/api';
 
 export default function Copilot() {
   const [input, setInput] = useState('');
@@ -12,7 +13,7 @@ export default function Copilot() {
   ]);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -22,28 +23,53 @@ export default function Copilot() {
     setInput('');
     setLoading(true);
 
-    // Mock AI response
-    setTimeout(() => {
+    try {
+      // For demo purposes, we still intercept the exact string "haven't contacted recently" 
+      // because the backend LangGraph doesn't have a fetch node for "recent without interaction" fully built yet,
+      // but for everything else (like logging interactions), we use the real AI!
       if (currentInput.toLowerCase().includes('haven\'t contacted') || currentInput.toLowerCase().includes('recent')) {
-        setMessages(prev => [...prev, {
-          type: 'ai',
-          text: 'I found 2 HCPs with no recent interaction.',
-          structuredData: {
-            type: 'hcp_list',
-            data: [
-              { id: 3, name: 'Dr. Mehta', lastContact: '34 days ago' },
-              { id: 4, name: 'Dr. Shah', lastContact: '41 days ago' }
-            ]
-          }
-        }]);
-      } else {
-        setMessages(prev => [...prev, {
-          type: 'ai',
-          text: 'I\'ve processed your request. Is there anything else you need?'
-        }]);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            type: 'ai',
+            text: 'I found 2 HCPs with no recent interaction.',
+            structuredData: {
+              type: 'hcp_list',
+              data: [
+                { id: 3, name: 'Dr. Mehta', lastContact: '34 days ago' },
+                { id: 4, name: 'Dr. Shah', lastContact: '41 days ago' }
+              ]
+            }
+          }]);
+          setLoading(false);
+        }, 1500);
+        return;
       }
+
+      // Call the real FastAPI endpoint
+      const res = await logAIInteraction(currentInput);
+      
+      let replyText = "I processed that for you.";
+      
+      // Basic response handling based on what the LangGraph returns
+      if (res && res.action === 'log') {
+        replyText = `Successfully logged a ${res.extracted_data?.engagement_level} engagement, ${res.extracted_data?.sentiment} sentiment interaction with ${res.extracted_data?.doctor_name}.`;
+      } else if (res && res.output) {
+        replyText = typeof res.output === 'string' ? res.output : JSON.stringify(res.output);
+      }
+      
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        text: replyText
+      }]);
+    } catch (error) {
+      console.error("AI Error:", error);
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        text: 'Sorry, I encountered an error communicating with the LangGraph server.'
+      }]);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const HcpCard = ({ hcp }) => (
