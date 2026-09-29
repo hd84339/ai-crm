@@ -24,6 +24,9 @@ class InteractionSchema(BaseModel):
     notes: Optional[str] = None
     sentiment: Optional[str] = Field(description="Positive | Negative | Neutral")
     follow_up: Optional[str] = None
+    interaction_type: Optional[str] = Field(description="Type of interaction e.g., Product Discussion, Follow-up")
+    engagement_level: Optional[str] = Field(description="High | Medium | Low")
+    summary: Optional[str] = Field(description="A 1-2 sentence concise summary of the interaction")
 
 
 structured_llm = llm.with_structured_output(InteractionSchema)
@@ -45,7 +48,7 @@ class State(TypedDict):
 def router(state: State):
     text = state["input"].lower()
 
-    if any(word in text for word in ["met", "discussed", "follow"]):
+    if any(word in text for word in ["met", "discussed", "follow", "call", "saw"]):
         action = "log"
     elif "edit" in text or "update" in text:
         action = "edit"
@@ -71,7 +74,8 @@ def extractor(state: State):
 
     Rules:
     - sentiment must be Positive, Negative, or Neutral
-    - always fill sentiment
+    - engagement_level must be High, Medium, or Low
+    - always fill sentiment and engagement_level if it's a log action
     """
 
     result = structured_llm.invoke(prompt)
@@ -100,7 +104,10 @@ def tool_executor(state: State):
             "doctor_name": data.doctor_name or "Unknown",
             "notes": data.notes or state["input"],
             "sentiment": data.sentiment or "Neutral",
-            "follow_up": data.follow_up
+            "follow_up": data.follow_up,
+            "type": data.interaction_type,
+            "summary": data.summary,
+            "engagement": data.engagement_level
         })
 
         return {

@@ -1,0 +1,170 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Edit, MessageSquare, Sparkles, Calendar, Activity, ThumbsUp } from 'lucide-react';
+
+export default function HCPProfile() {
+  const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [hcp, setHcp] = useState(null);
+
+  useEffect(() => {
+    // Mocking a fetch
+    setTimeout(() => {
+      setHcp({
+        id,
+        name: 'Dr. Patel',
+        specialty: 'Cardiologist',
+        location: 'Mumbai',
+        stats: {
+          interactions: 18,
+          engagement: 'High',
+          sentiment: 'Positive'
+        },
+        aiSummary: "Dr. Patel has shown strong interest in product efficacy. Recent conversations have been positive, with a follow-up planned for next week.",
+        timeline: [
+          { date: 'Sep 29', type: 'Product Discussion', details: ['Discussed product efficacy', 'Sentiment: Positive', 'Engagement: High', 'Follow-up: Oct 6'] },
+          { date: 'Sep 21', type: 'Follow-up', details: ['Reviewed previous discussion', 'Sentiment: Positive'] },
+          { date: 'Sep 12', type: 'Initial Meeting', details: ['Sentiment: Neutral'] },
+        ]
+      });
+      setLoading(false);
+    }, 500);
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500 animate-pulse">Loading HCP Profile...</div>;
+  }
+
+  if (!hcp) {
+    return <div className="p-8 text-center text-red-500">HCP not found</div>;
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold">
+            {hcp.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{hcp.name}</h1>
+            <p className="text-slate-500">{hcp.specialty} · {hcp.location}</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors">
+            <Edit className="w-4 h-4" />
+            Edit
+          </button>
+          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+            <MessageSquare className="w-4 h-4" />
+            Log Interaction
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+            <MessageSquare className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-slate-900">{hcp.stats.interactions}</div>
+            <div className="text-sm text-slate-500 font-medium">Interactions</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-emerald-700">{hcp.stats.engagement}</div>
+            <div className="text-sm text-slate-500 font-medium">Engagement</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+            <ThumbsUp className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-blue-700">{hcp.stats.sentiment}</div>
+            <div className="text-sm text-slate-500 font-medium">Sentiment</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* AI Summary */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-bold text-slate-900">AI Summary</h2>
+            </div>
+            <p className="text-slate-700 leading-relaxed">
+              {hcp.aiSummary}
+            </p>
+          </div>
+
+          {/* Timeline */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-6">Interaction History</h2>
+            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+              {hcp.timeline.map((item, idx) => (
+                <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-slate-900">{item.type}</h3>
+                      <time className="text-xs font-medium text-slate-500">{item.date}</time>
+                    </div>
+                    <ul className="text-sm text-slate-600 space-y-1">
+                      {item.details.map((detail, dIdx) => (
+                        <li key={dIdx} className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-1">•</span>
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Action Items / Meeting Prep */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <button className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg font-bold transition-colors shadow-sm mb-6">
+              <Sparkles className="w-4 h-4" />
+              Prepare for Meeting
+            </button>
+            
+            <h3 className="font-bold text-slate-900 mb-4">Open Action Items</h3>
+            <div className="space-y-3">
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3">
+                <input type="checkbox" className="mt-1" />
+                <div>
+                  <div className="text-sm font-medium text-slate-900">Share clinical data</div>
+                  <div className="text-xs text-rose-600 font-medium mt-1">Due Today</div>
+                </div>
+              </div>
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-start gap-3">
+                <input type="checkbox" className="mt-1" />
+                <div>
+                  <div className="text-sm font-medium text-slate-900">Schedule follow-up</div>
+                  <div className="text-xs text-amber-600 font-medium mt-1">Due Oct 6</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -152,6 +152,25 @@ def edit_interaction(
         }
     }
 
+@app.get("/analytics/dashboard")
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    total_hcps = db.query(models.HCP).count()
+    total_interactions = db.query(models.Interaction).count()
+    follow_ups_due = db.query(models.FollowUp).filter(models.FollowUp.status != "Completed").count()
+    
+    positive_interactions = db.query(models.Interaction).filter(models.Interaction.sentiment.ilike("Positive")).count()
+    
+    positive_sentiment_percent = 0
+    if total_interactions > 0:
+        positive_sentiment_percent = round((positive_interactions / total_interactions) * 100)
+
+    return {
+        "total_hcps": total_hcps,
+        "total_interactions": total_interactions,
+        "follow_ups_due": follow_ups_due,
+        "positive_sentiment_percent": positive_sentiment_percent
+    }
+
 # -------------------------
 # AI AGENT ENDPOINT
 # -------------------------

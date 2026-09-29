@@ -20,7 +20,10 @@ def log_interaction_tool(data: dict):
     interaction = models.Interaction(
         hcp_id=hcp.id,
         notes=data.get("notes"),
-        sentiment=data.get("sentiment")
+        sentiment=data.get("sentiment"),
+        type=data.get("type"),
+        summary=data.get("summary"),
+        engagement=data.get("engagement")
     )
     db.add(interaction)
     db.commit()
