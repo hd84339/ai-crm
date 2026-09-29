@@ -1,28 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, CheckCircle, Clock, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { getFollowUps, getHcps } from '../services/api';
 
 export default function FollowUps() {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState({ today: [], upcoming: [], completed: [] });
 
   useEffect(() => {
-    // Mocking fetch data
-    setTimeout(() => {
-      setTasks({
-        today: [
-          { id: 1, doctor: 'Dr. Patel', task: 'Share clinical data', priority: 'high', status: 'pending' },
-          { id: 2, doctor: 'Dr. Sharma', task: 'Schedule follow-up', priority: 'medium', status: 'pending' }
-        ],
-        upcoming: [
-          { id: 3, doctor: 'Dr. Mehta', task: 'Product discussion', date: 'Oct 2', priority: 'low', status: 'pending' }
-        ],
-        completed: [
-          { id: 4, doctor: 'Dr. Singh', task: 'Send efficacy report', date: 'Sep 25', status: 'completed' }
-        ]
-      });
-      setLoading(false);
-    }, 500);
+    fetchTasks();
   }, []);
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const res = await getFollowUps();
+      
+      // We also need HCP names. In a real app, the backend should ideally return them,
+      // but we can just fetch HCPs and map them for now.
+      const hcpsRes = await getHcps('', 1, 1000); 
+      const hcpsMap = {};
+      if (hcpsRes.success) {
+        hcpsRes.data.forEach(h => {
+          hcpsMap[h.id] = h.name;
+        });
+      }
+
+      if (res.success) {
+        const today = [];
+        const upcoming = [];
+        const completed = [];
+        
+        const now = new Date();
+        
+        res.data.forEach(followup => {
+          const item = {
+            id: followup.id,
+            doctor: hcpsMap[followup.hcp_id] || `HCP #${followup.hcp_id}`,
+            task: followup.task,
+            date: followup.due_date ? new Date(followup.due_date).toLocaleDateString() : null,
+            priority: 'medium', // Default
+            status: followup.status
+          };
+          
+          if (followup.status?.toLowerCase() === 'completed') {
+            completed.push(item);
+          } else {
+            // Simple logic to separate today and upcoming
+            if (followup.due_date && new Date(followup.due_date) > now) {
+              upcoming.push(item);
+            } else {
+              today.push(item);
+            }
+          }
+        });
+        
+        setTasks({ today, upcoming, completed });
+      }
+    } catch (error) {
+      console.error("Failed to fetch follow-ups", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const TaskCard = ({ task, section }) => (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">

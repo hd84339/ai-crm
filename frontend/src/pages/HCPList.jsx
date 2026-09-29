@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Search, Plus, User, Calendar, Activity } from 'lucide-react';
+import { getHcps } from '../services/api';
 
 export default function HCPList() {
   const [hcps, setHcps] = useState([]);
@@ -9,23 +9,26 @@ export default function HCPList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // In a real app, you would fetch from your FastAPI backend:
-    // axios.get('http://127.0.0.1:8000/hcps').then(...)
-    
-    // Using mock data for now to represent the UI
-    setTimeout(() => {
-      setHcps([
-        { id: 1, name: 'Dr. Patel', specialty: 'Cardiologist', location: 'Mumbai', engagement: 'High', lastContact: 'Today', sentiment: 'Positive' },
-        { id: 2, name: 'Dr. Sharma', specialty: 'Endocrinologist', location: 'Delhi', engagement: 'Medium', lastContact: 'Sep 27', sentiment: 'Neutral' },
-        { id: 3, name: 'Dr. Mehta', specialty: 'Physician', location: 'Ahmedabad', engagement: 'Low', lastContact: 'Sep 15', sentiment: 'Negative' },
-      ]);
-      setLoading(false);
-    }, 500);
+    fetchHcps();
   }, []);
 
+  const fetchHcps = async () => {
+    try {
+      setLoading(true);
+      const res = await getHcps();
+      if (res.success) {
+        setHcps(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch HCPs", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredHcps = hcps.filter(hcp => 
-    hcp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    hcp.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+    hcp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    hcp.specialty?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

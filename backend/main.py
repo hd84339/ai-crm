@@ -83,39 +83,62 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
         }
     }
 
-@app.get("/interaction/list")
-def get_all_interactions(db: Session = Depends(get_db)):
-    interactions = db.query(models.Interaction).all()
-    # For compatibility, we can add doctor_name and follow_up back to response
+@app.get("/interactions")
+def get_all_interactions(page: int = 1, limit: int = 20, sentiment: str = None, engagement: str = None, db: Session = Depends(get_db)):
+    query = db.query(models.Interaction)
+    
+    if sentiment:
+        query = query.filter(models.Interaction.sentiment.ilike(sentiment))
+    if engagement:
+        query = query.filter(models.Interaction.engagement.ilike(engagement))
+        
+    total = query.count()
+    interactions = query.order_by(models.Interaction.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    
     result = []
     for int_obj in interactions:
         hcp = db.query(models.HCP).filter(models.HCP.id == int_obj.hcp_id).first()
         result.append({
             "id": int_obj.id,
             "doctor_name": hcp.name if hcp else "Unknown",
+            "type": int_obj.type,
             "notes": int_obj.notes,
             "sentiment": int_obj.sentiment,
-            "follow_up": "Follow-up tasks exist" if int_obj.follow_ups else None,
+            "engagement": int_obj.engagement,
             "created_at": int_obj.created_at
         })
-    return result
+        
+    return {
+        "success": True,
+        "data": result,
+        "meta": {
+            "total": total,
+            "page": page,
+            "limit": limit
+        }
+    }
 
-@app.get("/interaction/{interaction_id}")
+@app.get("/interactions/{interaction_id}")
 def get_interaction(interaction_id: int, db: Session = Depends(get_db)):
     interaction = db.query(models.Interaction).filter(
         models.Interaction.id == interaction_id
     ).first()
 
     if not interaction:
-        return {"error": "Interaction not found ❌"}
+        return {"success": False, "message": "Interaction not found"}
 
     hcp = db.query(models.HCP).filter(models.HCP.id == interaction.hcp_id).first()
     return {
-        "id": interaction.id,
-        "doctor_name": hcp.name if hcp else "Unknown",
-        "notes": interaction.notes,
-        "sentiment": interaction.sentiment,
-        "created_at": interaction.created_at
+        "success": True,
+        "data": {
+            "id": interaction.id,
+            "doctor_name": hcp.name if hcp else "Unknown",
+            "type": interaction.type,
+            "notes": interaction.notes,
+            "sentiment": interaction.sentiment,
+            "engagement": interaction.engagement,
+            "created_at": interaction.created_at
+        }
     }
 
 @app.put("/interaction/edit/{interaction_id}")
@@ -169,6 +192,59 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "total_interactions": total_interactions,
         "follow_ups_due": follow_ups_due,
         "positive_sentiment_percent": positive_sentiment_percent
+    }
+
+# -------------------------
+# HCP ENDPOINTS
+# -------------------------
+@app.get("/hcps")
+def get_hcps(search: str = None, page: int = 1, limit: int = 20, db: Session = Depends(get_db)):
+    query = db.query(models.HCP)
+    if search:
+        query = query.filter(models.HCP.name.ilike(f"%{search}%") | models.HCP.specialty.ilike(f"%{search}%"))
+    
+    total = query.count()
+    hcps = query.offset((page - 1) * limit).limit(limit).all()
+    
+    return {
+        "success": True,
+        "data": hcps,
+        "meta": {
+            "total": total,
+            "page": page,
+            "limit": limit
+        }
+    }
+
+@app.get("/hcps/{hcp_id}")
+def get_hcp(hcp_id: int, db: Session = Depends(get_db)):
+    hcp = db.query(models.HCP).filter(models.HCP.id == hcp_id).first()
+    if not hcp:
+        return {"success": False, "message": "HCP not found"}
+    
+    interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).order_by(models.Interaction.created_at.desc()).all()
+    
+    return {
+        "success": True,
+        "data": {
+            "hcp": hcp,
+            "interactions": interactions
+        }
+    }
+
+# -------------------------
+# FOLLOW-UP ENDPOINTS
+# -------------------------
+@app.get("/followups")
+def get_followups(status: str = None, db: Session = Depends(get_db)):
+    query = db.query(models.FollowUp)
+    if status:
+        query = query.filter(models.FollowUp.status.ilike(status))
+    
+    followups = query.order_by(models.FollowUp.due_date.asc()).all()
+    return {
+        "success": True,
+        "data": followups
     }
 
 # -------------------------

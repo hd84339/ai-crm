@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { getDashboardStats } from '../services/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -11,17 +11,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Assuming backend runs on 8000
-    axios.get('http://127.0.0.1:8000/analytics/dashboard')
-      .then(res => {
-        setStats(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch dashboard stats", err);
-        setLoading(false);
-      });
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error("Failed to fetch dashboard stats", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
