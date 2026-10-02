@@ -251,6 +251,25 @@ def get_hcp(hcp_id: int, db: Session = Depends(get_db)):
         }
     }
 
+@app.put("/hcps/{hcp_id}")
+def update_hcp(hcp_id: int, data: schemas.HCPUpdate, db: Session = Depends(get_db)):
+    hcp = db.query(models.HCP).filter(models.HCP.id == hcp_id).first()
+    if not hcp:
+        return {"success": False, "message": "HCP not found"}
+    
+    update_data = data.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(hcp, key, value)
+        
+    db.commit()
+    db.refresh(hcp)
+    
+    return {
+        "success": True,
+        "message": "HCP updated successfully ✅",
+        "data": hcp
+    }
+
 @app.delete("/hcps/{hcp_id}")
 def delete_hcp(hcp_id: int, db: Session = Depends(get_db)):
     hcp = db.query(models.HCP).filter(models.HCP.id == hcp_id).first()

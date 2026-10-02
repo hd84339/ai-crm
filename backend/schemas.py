@@ -15,6 +15,14 @@ class HCPSchema(HCPCreate):
     class Config:
         orm_mode = True
 
+class HCPUpdate(BaseModel):
+    name: Optional[str] = None
+    specialty: Optional[str] = None
+    location: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+
+
 class InteractionCreate(BaseModel):
     hcp_id: Optional[int] = None
     doctor_name: Optional[str] = None # For legacy support or easy creation

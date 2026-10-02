@@ -27,6 +27,11 @@ export const getHcpProfile = async (id) => {
   return res.data;
 };
 
+export const updateHcp = async (id, data) => {
+  const res = await api.put(`/hcps/${id}`, data);
+  return res.data;
+};
+
 export const deleteHcp = async (id) => {
   const res = await api.delete(`/hcps/${id}`);
   return res.data;
