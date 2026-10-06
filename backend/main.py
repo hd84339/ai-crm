@@ -175,6 +175,14 @@ def edit_interaction(
         }
     }
 
+@app.delete("/interactions")
+def delete_interactions(data: schemas.BulkDelete, db: Session = Depends(get_db)):
+    if not data.ids:
+        return {"success": False, "message": "No IDs provided"}
+    db.query(models.Interaction).filter(models.Interaction.id.in_(data.ids)).delete(synchronize_session=False)
+    db.commit()
+    return {"success": True, "message": f"{len(data.ids)} interactions deleted successfully ✅"}
+
 @app.get("/analytics/dashboard")
 def get_dashboard_stats(db: Session = Depends(get_db)):
     total_hcps = db.query(models.HCP).count()

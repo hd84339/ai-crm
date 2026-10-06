@@ -51,3 +51,6 @@ class FollowUpUpdate(BaseModel):
     task: Optional[str] = None
     status: Optional[str] = None
     due_date: Optional[datetime] = None
+
+class BulkDelete(BaseModel):
+    ids: List[int]

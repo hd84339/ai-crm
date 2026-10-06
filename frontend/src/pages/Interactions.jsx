@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getInteractions } from '../services/api';
-import { Calendar, MessageSquare, ThumbsUp, Activity, Search, Filter } from 'lucide-react';
+import { getInteractions, deleteInteractions } from '../services/api';
+import { Calendar, MessageSquare, ThumbsUp, Activity, Search, Filter, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Interactions() {
@@ -8,6 +8,7 @@ export default function Interactions() {
   const [loading, setLoading] = useState(true);
   const [sentimentFilter, setSentimentFilter] = useState('');
   const [engagementFilter, setEngagementFilter] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     fetchInteractions();
@@ -24,6 +25,32 @@ export default function Interactions() {
       console.error("Failed to fetch interactions", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(interactions.map(i => i.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} interaction(s)?`)) {
+      try {
+        const res = await deleteInteractions(selectedIds);
+        if (res.success) {
+          setSelectedIds([]);
+          fetchInteractions();
+        }
+      } catch (error) {
+        console.error("Failed to delete interactions", error);
+      }
     }
   };
 
@@ -62,6 +89,15 @@ export default function Interactions() {
               <option value="Low">Low</option>
             </select>
           </div>
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm font-medium hover:bg-rose-100 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete ({selectedIds.length})
+            </button>
+          )}
         </div>
       </div>
 
@@ -83,6 +119,14 @@ export default function Interactions() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-sm">
+                  <th className="p-4 w-12">
+                    <input
+                      type="checkbox"
+                      checked={interactions.length > 0 && selectedIds.length === interactions.length}
+                      onChange={handleSelectAll}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                    />
+                  </th>
                   <th className="p-4 font-semibold text-slate-600">Date</th>
                   <th className="p-4 font-semibold text-slate-600">HCP</th>
                   <th className="p-4 font-semibold text-slate-600">Type</th>
@@ -94,6 +138,14 @@ export default function Interactions() {
               <tbody className="divide-y divide-slate-100">
                 {interactions.map((interaction) => (
                   <tr key={interaction.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-4 align-top w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(interaction.id)}
+                        onChange={() => handleSelectOne(interaction.id)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                      />
+                    </td>
                     <td className="p-4 align-top">
                       <div className="flex items-center gap-2 text-sm text-slate-600 font-medium whitespace-nowrap">
                         <Calendar className="w-4 h-4 text-slate-400" />

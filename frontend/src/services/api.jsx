@@ -47,6 +47,11 @@ export const getInteractions = async (page = 1, sentiment = '', engagement = '')
   return res.data;
 };
 
+export const deleteInteractions = async (ids) => {
+  const res = await api.delete(`/interactions`, { data: { ids } });
+  return res.data;
+};
+
 export const getFollowUps = async (status = '') => {
   const res = await api.get(`/followups?status=${status}`);
   return res.data;
