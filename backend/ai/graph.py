@@ -20,7 +20,7 @@ llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0)
 # STRUCTURED OUTPUT
 # -------------------------
 class InteractionSchema(BaseModel):
-    action: str = Field(description="log | edit | fetch | delete")
+    action: str = Field(description="log | edit | fetch | delete | chat")
     interaction_id: Optional[int] = Field(default=None, description="ID of the interaction to edit or delete")
     doctor_name: Optional[str] = None
     notes: Optional[str] = None
@@ -49,13 +49,16 @@ class State(TypedDict):
 # -------------------------
 def router(state: State):
     text = state["input"].lower()
-
+    
+    # Simple heuristic fallback
     if "delete" in text or "remove" in text:
         action = "delete"
     elif any(word in text for word in ["met", "discussed", "follow", "call", "saw"]):
         action = "log"
     elif "edit" in text or "update" in text:
         action = "edit"
+    elif any(word in text for word in ["hello", "hi", "hey", "what's up", "whts up"]):
+        action = "chat"
     else:
         action = "fetch"
 
@@ -70,13 +73,18 @@ def router(state: State):
 # -------------------------
 def extractor(state: State):
     text = state["input"]
+    heuristic_action = state.get("action", "chat")
 
     prompt = f"""
     Extract CRM structured data from this text:
 
     Text: {text}
+    
+    Suggested Action: {heuristic_action}
 
     Rules:
+    - Determine if the action is log, edit, fetch, delete, or chat.
+    - If the text is just a greeting or conversational (e.g. "hey", "hello", "what's up"), set action to 'chat'.
     - For FETCH/QUERY actions: sentiment and engagement_level are optional and should normally be null. Do not invent CRM data.
     - For LOG actions: try to extract sentiment (Positive, Negative, or Neutral) and engagement_level (High, Medium, or Low).
     - If it's a log action and you can't determine it, just leave it null.
@@ -105,8 +113,14 @@ def tool_executor(state: State):
 
     action_lower = data.action.lower()
 
+    if action_lower == "chat":
+        return {
+            **state,
+            "output": "I am your AI CRM assistant. How can I help you manage your HCP interactions today?"
+        }
+
     # LOG FLOW
-    if action_lower == "log":
+    elif action_lower == "log":
         result = log_interaction_tool({
             "doctor_name": data.doctor_name or "Unknown",
             "notes": data.notes or state["input"],
@@ -175,18 +189,24 @@ from langchain_core.messages import HumanMessage
 
 def formatter(state: State):
     data = state.get("extracted_data")
+    action = data.action.lower() if data else ""
     
-    # Only format if it's a fetch action
-    if data and data.action.lower() == "fetch":
+    if action == "chat":
+        return {
+            **state,
+            "output": state.get("output")
+        }
+
+    if data:
         raw_output = state.get("output")
         prompt = f"""
-        You are a CRM AI assistant. The user asked: "{state['input']}"
-        Here is the raw database data returned for their query: {raw_output}
+        You are a CRM AI assistant. The user asked or stated: "{state['input']}"
+        The system performed the action '{action}' and returned this result: {raw_output}
         
         Please format this into a helpful, human-readable response. 
-        Don't output JSON. Summarize the interactions nicely. 
-        Example: "You had 9 interactions today..."
-        Use bullet points and be concise.
+        Don't output JSON. Be conversational and professional.
+        If it was a log, edit, or delete action, confirm it nicely based on the system result.
+        If it was a fetch action, summarize the interactions nicely. Use bullet points and be concise.
         """
         response = llm.invoke([HumanMessage(content=prompt)])
         return {
